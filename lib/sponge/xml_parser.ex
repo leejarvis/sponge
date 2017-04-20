@@ -4,10 +4,10 @@ defmodule Sponge.XMLParser do
   Record.defrecord :xmlAttribute, Record.extract(:xmlAttribute, from_lib: "xmerl/include/xmerl.hrl")
   Record.defrecord :xmlText,      Record.extract(:xmlText, from_lib: "xmerl/include/xmerl.hrl")
 
-  def parse(xml) do
+  def parse(xml, options \\ []) do
     {doc, _} =
       to_char_list(xml)
-      |> :xmerl_scan.string([])
+      |> :xmerl_scan.string(options)
     doc
   end
 
@@ -21,10 +21,10 @@ defmodule Sponge.XMLParser do
   defp take(_),
     do: nil
 
-  defp xpath(nil, _),
+  def xpath(nil, _),
     do: []
-  defp xpath(node, path),
-    do: :xmerl_xpath.string(to_char_list(path), node)
+  def xpath(node, path, options \\ []),
+    do: :xmerl_xpath.string(to_char_list(path), node, options)
 
   def text(node),
     do: node |> xpath('./text()') |> extract_text

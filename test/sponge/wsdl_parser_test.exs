@@ -2,14 +2,15 @@ defmodule Sponge.WSDLParserTest do
   use ExUnit.Case
   doctest Sponge.WSDLParser
 
-  alias Sponge.WSDLParser, as: Parser
+  alias Sponge.WSDLParser
 
   @raw Fixtures.read!("stock_quote.wsdl")
 
-  test "endpoint" do
-    expected = @raw
-    wsdl     = Parser.parse(@raw)
+  setup do
+    {:ok, wsdl: WSDLParser.parse(@raw)}
+  end
 
-    assert wsdl.contents == expected
+  test "soap version", %{wsdl: wsdl} do
+    assert wsdl.soap_version == "1.2"
   end
 end
