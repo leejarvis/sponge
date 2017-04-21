@@ -21,7 +21,7 @@ defmodule Sponge.XMLParserTest do
   """
 
   setup do
-    {:ok, doc: xml_parse(@xml)}
+    {:ok, doc: xml_parse(@xml, namespace_conformant: true)}
   end
 
   test "searching", %{doc: doc} do

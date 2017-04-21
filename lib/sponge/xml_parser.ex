@@ -7,6 +7,7 @@ defmodule Sponge.XMLParser do
   Record.defrecord :xmlElement,   Record.extract(:xmlElement, from_lib: "xmerl/include/xmerl.hrl")
   Record.defrecord :xmlAttribute, Record.extract(:xmlAttribute, from_lib: "xmerl/include/xmerl.hrl")
   Record.defrecord :xmlText,      Record.extract(:xmlText, from_lib: "xmerl/include/xmerl.hrl")
+  Record.defrecord :xmlNamespace, Record.extract(:xmlText, from_lib: "xmerl/include/xmerl.hrl")
 
   def xml_parse(xml, options \\ []) do
     {doc, _} =
@@ -69,8 +70,14 @@ defmodule Sponge.XMLParser do
   end
   defp extract_attr(_), do: nil
 
+  def xml_namespaces(xmlElement(namespace: {:xmlNamespace, _, ns})) do
+    for {key, value} <- ns, do: {str(key), str(value)}, into: %{}
+  end
+
   defp xpath(nil, _), do: []
   defp xpath(node, path, opts \\ []) do
     :xmerl_xpath.string(to_char_list(path), node, opts)
   end
+
+  defp str(v), do: to_string(v)
 end

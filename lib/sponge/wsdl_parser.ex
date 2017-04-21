@@ -2,7 +2,8 @@ defmodule Sponge.WSDLParser do
   alias Sponge.XMLParser
 
   defmodule WSDL do
-    defstruct [:doc, :soap_version, :endpoint, :name]
+    defstruct [:doc, :target_namespace, :namespaces,
+               :soap_version, :endpoint, :name]
   end
 
   import XMLParser
@@ -15,6 +16,7 @@ defmodule Sponge.WSDLParser do
   def parse(wsdl) do
     wsdl
     |> parse_xml
+    |> parse_namespaces
     |> parse_soap_version
     |> parse_endpoint
     |> parse_name
@@ -22,6 +24,10 @@ defmodule Sponge.WSDLParser do
 
   defp parse_xml(wsdl) do
     %WSDL{doc: xml_parse(wsdl, namespace_conformant: true)}
+  end
+
+  defp parse_namespaces(%WSDL{doc: doc} = wsdl) do
+    %{wsdl | namespaces: xml_namespaces(doc)}
   end
 
   defp parse_soap_version(%WSDL{doc: doc} = wsdl) do

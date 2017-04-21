@@ -21,4 +21,14 @@ defmodule Sponge.WSDLParserTest do
   test "service name", %{wsdl: wsdl} do
     assert wsdl.name == "StockQuote"
   end
+
+  test "namespaces", %{wsdl: wsdl} do
+    assert wsdl.namespaces == %{
+      "soap"  => "http://schemas.xmlsoap.org/wsdl/soap12/",
+      "tns"   => "http://example.com/stockquote.wsdl",
+      "xs"    => "http://www.w3.org/2001/XMLSchema",
+      "xsd1"  => "http://example.com/stockquote.xsd",
+      "xsd2"  => "http://example.com/stockquote2.xsd"
+    }
+  end
 end
