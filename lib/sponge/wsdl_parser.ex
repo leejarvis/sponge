@@ -5,7 +5,7 @@ defmodule Sponge.WSDLParser do
     defstruct [:doc, :soap_version, :endpoint]
   end
 
-  import XMLParser, only: [xpath: 3, attr: 2]
+  import XMLParser
 
   @soap_1_1 'http://schemas.xmlsoap.org/wsdl/soap/'
   @soap_1_2 'http://schemas.xmlsoap.org/wsdl/soap12/'
@@ -18,11 +18,11 @@ defmodule Sponge.WSDLParser do
   end
 
   defp parse_xml(wsdl) do
-    %WSDL{doc: XMLParser.parse(wsdl, namespace_conformant: true)}
+    %WSDL{doc: xml_parse(wsdl, namespace_conformant: true)}
   end
 
   defp parse_soap_version(%WSDL{doc: doc} = wsdl) do
-    case xpath(doc, "//s2:*", namespace: [s2: @soap_1_2]) do
+    case xml_search(doc, "//s2:*", namespace: [s2: @soap_1_2]) do
       [] -> %{wsdl | soap_version: "1.1"}
       _  -> %{wsdl | soap_version: "1.2"}
     end
@@ -30,8 +30,8 @@ defmodule Sponge.WSDLParser do
 
   defp parse_endpoint(%WSDL{doc: doc} = wsdl) do
     path = "/d:definitions/d:service/d:port/s:address"
-    endpoint = case xpath(doc, path, namespace: ns(wsdl)) do
-      [address] -> attr(address, "location")
+    endpoint = case xml_search(doc, path, namespace: ns(wsdl)) do
+      [address] -> xml_attr(address, "location")
       _ -> nil
     end
     %{wsdl | endpoint: URI.decode(endpoint)}

@@ -21,31 +21,39 @@ defmodule Sponge.XMLParserTest do
   """
 
   setup do
-    {:ok, doc: Parser.parse(@xml)}
+    {:ok, doc: xml_parse(@xml)}
   end
 
   test "searching", %{doc: doc} do
-    books = search(doc, "//book")
+    books = xml_search(doc, "//book")
 
     names = Enum.map(books, fn(book) ->
-      find(book, "name") |> text
+      xml_find(book, "name") |> xml_text
     end)
 
     assert names == ["My book", "My other book"]
-    assert search(doc, "//nobook") == []
+    assert xml_search(doc, "//nobook") == []
   end
 
   test "finding", %{doc: doc} do
-    name = find(doc, "//book[@id='456']/name")
+    name = xml_find(doc, "//book[@id='456']/name")
 
-    assert text(name) == "My other book"
-    assert find(doc, "//nobook") == nil
+    assert xml_text(name) == "My other book"
+    assert xml_find(doc, "//nobook") == nil
   end
 
   test "attributes", %{doc: doc} do
-    book = find(doc, "//book")
+    book = xml_find(doc, "//book")
 
-    assert attr(book, "id") == "123"
-    assert attr(book, "foo") == nil
+    assert xml_attr(book, "id") == "123"
+    assert xml_attr(book, "foo") == nil
+  end
+
+  test "text", %{doc: doc} do
+    name = xml_find(doc, "//book/name")
+    assert xml_text(name) == "My book"
+
+    name = xml_find(doc, "//book/name/text()")
+    assert xml_text(name) == "My book"
   end
 end
