@@ -20,15 +20,19 @@ defmodule Sponge.XMLParser do
   end
 
   def xml_find(node, path, opts \\ []) do
-    node |> xpath(path, opts) |> take
+    node
+    |> xpath(path, opts)
+    |> take
+    |> parsed
   end
 
   defp take([head | _]), do: head
   defp take(_), do: nil
 
-  def xml_text(xmlText(value: value)) do
-    value |> to_string
-  end
+  defp parsed(xmlAttribute(value: value)), do: to_string(value)
+  defp parsed(value), do: value
+
+  def xml_text(xmlText(value: value)), do: to_string(value)
 
   def xml_text(node) do
     node |> xpath('./text()') |> extract_text
@@ -39,6 +43,7 @@ defmodule Sponge.XMLParser do
   defp extract_text(_),
     do: nil
 
+  def xml_attr(xmlAttribute(value: value)), do: to_string(value)
   def xml_attr(node, name) do
     node |> xpath('./@#{name}') |> extract_attr
   end

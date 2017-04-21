@@ -47,6 +47,11 @@ defmodule Sponge.XMLParserTest do
 
     assert xml_attr(book, "id") == "123"
     assert xml_attr(book, "foo") == nil
+
+    id = xml_find(doc, "//book/@id")
+    assert id == "123"
+
+    assert nil == xml_find(doc, "//book/@omg")
   end
 
   test "text", %{doc: doc} do
