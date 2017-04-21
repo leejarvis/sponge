@@ -17,4 +17,8 @@ defmodule Sponge.WSDLParserTest do
   test "endpoint", %{wsdl: wsdl} do
     assert wsdl.endpoint == "http://example.com/stockquote"
   end
+
+  test "service name", %{wsdl: wsdl} do
+    assert wsdl.name == "StockQuote"
+  end
 end

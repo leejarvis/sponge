@@ -2,7 +2,7 @@ defmodule Sponge.WSDLParser do
   alias Sponge.XMLParser
 
   defmodule WSDL do
-    defstruct [:doc, :soap_version, :endpoint]
+    defstruct [:doc, :soap_version, :endpoint, :name]
   end
 
   import XMLParser
@@ -17,6 +17,7 @@ defmodule Sponge.WSDLParser do
     |> parse_xml
     |> parse_soap_version
     |> parse_endpoint
+    |> parse_name
   end
 
   defp parse_xml(wsdl) do
@@ -35,6 +36,10 @@ defmodule Sponge.WSDLParser do
       nil   -> wsdl
       value -> %{wsdl | endpoint: URI.decode(value)}
     end
+  end
+
+  defp parse_name(wsdl) do
+    %{wsdl | name: xml_attr(wsdl.doc, "name")}
   end
 
   defp find(%WSDL{} = wsdl, path) do
