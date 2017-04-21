@@ -13,4 +13,8 @@ defmodule Sponge.WSDLParserTest do
   test "soap version", %{wsdl: wsdl} do
     assert wsdl.soap_version == "1.2"
   end
+
+  test "endpoint", %{wsdl: wsdl} do
+    assert wsdl.endpoint == "http://example.com/stockquote"
+  end
 end
