@@ -31,4 +31,14 @@ defmodule Sponge.WSDLParserTest do
       "xsd2"  => "http://example.com/stockquote2.xsd"
     }
   end
+
+  test "messages", %{wsdl: wsdl} do
+    assert Map.keys(wsdl.messages) == [
+      "GetHistoricalPriceInput",
+      "GetHistoricalPriceOutput",
+      "GetLastTradePriceInput",
+      "GetLastTradePriceInputHeader",
+      "GetLastTradePriceOutput"
+    ]
+  end
 end

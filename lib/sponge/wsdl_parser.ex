@@ -3,7 +3,7 @@ defmodule Sponge.WSDLParser do
 
   defmodule WSDL do
     defstruct [:doc, :target_namespace, :namespaces,
-               :soap_version, :endpoint, :name]
+               :soap_version, :endpoint, :name, :messages]
   end
 
   import XMLParser
@@ -20,6 +20,7 @@ defmodule Sponge.WSDLParser do
     |> parse_soap_version
     |> parse_endpoint
     |> parse_name
+    |> parse_messages
   end
 
   defp parse_xml(wsdl) do
@@ -48,8 +49,21 @@ defmodule Sponge.WSDLParser do
     %{wsdl | name: xml_attr(wsdl.doc, "name")}
   end
 
+  defp parse_messages(wsdl) do
+    %{wsdl | messages: do_parse_messages(wsdl)}
+  end
+  defp do_parse_messages(wsdl) do
+    for m <- search(wsdl, "/wsdl:definitions/wsdl:message"), into: %{} do
+      {xml_attr(m, :name), m}
+    end
+  end
+
   defp find(%WSDL{} = wsdl, path) do
     xml_find(wsdl.doc, path, namespace: ns(wsdl))
+  end
+
+  defp search(%WSDL{} = wsdl, path) do
+    xml_search(wsdl.doc, path, namespace: ns(wsdl))
   end
 
   defp ns(%WSDL{soap_version: version}) do
