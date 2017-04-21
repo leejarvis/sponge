@@ -28,13 +28,15 @@ defmodule Sponge.WSDLParser do
     end
   end
 
-  defp parse_endpoint(%WSDL{doc: doc} = wsdl) do
-    path = "/d:definitions/d:service/d:port/s:address"
-    endpoint = case xml_search(doc, path, namespace: ns(wsdl)) do
-      [address] -> xml_attr(address, "location")
-      _ -> nil
+  defp parse_endpoint(wsdl) do
+    case find(wsdl, "/d:definitions/d:service/d:port/s:address/@location") do
+      nil   -> wsdl
+      value -> %{wsdl | endpoint: URI.decode(value)}
     end
-    %{wsdl | endpoint: URI.decode(endpoint)}
+  end
+
+  defp find(%WSDL{} = wsdl, path) do
+    xml_find(wsdl.doc, path, namespace: ns(wsdl))
   end
 
   defp ns(%WSDL{soap_version: version}) do
