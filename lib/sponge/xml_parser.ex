@@ -15,10 +15,26 @@ defmodule Sponge.XMLParser do
     doc
   end
 
+  @doc """
+      iex> import Sponge.XMLParser
+      iex>
+      iex> xml_parse("<root><name>Lee</name><name>Shirley</name></root>")
+      iex> |> xml_search("//name")
+      iex> |> Enum.map(&xml_text/1)
+      ["Lee", "Shirley"]
+  """
   def xml_search(node, path, opts \\ []) do
     for found <- xpath(node, path, opts), do: found
   end
 
+  @doc """
+      iex> import Sponge.XMLParser
+      iex>
+      iex> xml_parse("<author><name>Lee</name></author>")
+      iex> |> xml_find("//author/name")
+      iex> |> xml_text()
+      "Lee"
+  """
   def xml_find(node, path, opts \\ []) do
     node
     |> xpath(path, opts)
