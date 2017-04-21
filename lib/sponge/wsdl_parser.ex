@@ -28,7 +28,8 @@ defmodule Sponge.WSDLParser do
   end
 
   defp parse_namespaces(%WSDL{doc: doc} = wsdl) do
-    %{wsdl | namespaces: xml_namespaces(doc)}
+    %{wsdl | namespaces: xml_namespaces(doc),
+      target_namespace: xml_attr(doc, "targetNamespace")}
   end
 
   defp parse_soap_version(%WSDL{doc: doc} = wsdl) do

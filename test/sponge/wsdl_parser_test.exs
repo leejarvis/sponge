@@ -23,6 +23,7 @@ defmodule Sponge.WSDLParserTest do
   end
 
   test "namespaces", %{wsdl: wsdl} do
+    assert wsdl.target_namespace == "http://example.com/stockquote.wsdl"
     assert wsdl.namespaces == %{
       "soap"  => "http://schemas.xmlsoap.org/wsdl/soap12/",
       "tns"   => "http://example.com/stockquote.wsdl",
