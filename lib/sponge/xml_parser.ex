@@ -46,19 +46,17 @@ defmodule Sponge.XMLParser do
   defp take([head | _]), do: head
   defp take(_), do: nil
 
-  defp parsed(xmlAttribute(value: value)), do: to_string(value)
+  defp parsed(xmlAttribute(value: value)), do: str(value)
   defp parsed(value), do: value
 
-  def xml_text(xmlText(value: value)), do: to_string(value)
+  def xml_text(xmlText(value: value)), do: str(value)
 
   def xml_text(node) do
     node |> xpath('./text()') |> extract_text
   end
 
-  defp extract_text([xmlText(value: value)]),
-    do: to_string(value)
-  defp extract_text(_),
-    do: nil
+  defp extract_text([xmlText(value: value)]), do: str(value)
+  defp extract_text(_), do: nil
 
   def xml_attr(xmlAttribute(value: value)), do: to_string(value)
   def xml_attr(node, name) do

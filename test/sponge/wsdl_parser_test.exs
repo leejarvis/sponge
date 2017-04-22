@@ -42,4 +42,11 @@ defmodule Sponge.WSDLParserTest do
       "GetLastTradePriceOutput"
     ]
   end
+
+  test "port type operations", %{wsdl: wsdl} do
+    assert wsdl.port_type_operations == %{
+      "GetHistoricalPrice" => ["tns:GetHistoricalPriceInput", "tns:GetHistoricalPriceOutput"],
+      "GetLastTradePrice"  => ["tns:GetLastTradePriceInput", "tns:GetLastTradePriceOutput"]
+    }
+  end
 end

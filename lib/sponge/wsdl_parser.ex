@@ -3,7 +3,8 @@ defmodule Sponge.WSDLParser do
 
   defmodule WSDL do
     defstruct [:doc, :target_namespace, :namespaces,
-               :soap_version, :endpoint, :name, :messages]
+              :soap_version, :endpoint, :name, :messages,
+              :port_type_operations]
   end
 
   import XMLParser
@@ -21,6 +22,7 @@ defmodule Sponge.WSDLParser do
     |> parse_endpoint
     |> parse_name
     |> parse_messages
+    |> parse_port_type_operations
   end
 
   defp parse_xml(wsdl) do
@@ -56,6 +58,16 @@ defmodule Sponge.WSDLParser do
   defp do_parse_messages(wsdl) do
     for m <- search(wsdl, "/wsdl:definitions/wsdl:message"), into: %{} do
       {xml_attr(m, :name), m}
+    end
+  end
+
+  defp parse_port_type_operations(wsdl) do
+    %{wsdl | port_type_operations: do_parse_port_type_operations(wsdl)}
+  end
+  defp do_parse_port_type_operations(wsdl) do
+    for op <- search(wsdl, "/wsdl:definitions/wsdl:portType/wsdl:operation"), into: %{} do
+      {xml_attr(op, :name), [xml_find(op, "./input/@message"),
+                               xml_find(op, "./output/@message")]}
     end
   end
 
