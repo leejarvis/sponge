@@ -1,5 +1,15 @@
 # Sponge
 
-It's a sponge, it gets soapy
+Sponge is a library for dealing with building SOAP requests and parsing
+responses.
 
-Pre pre-alpha, just ignore for now
+This is a work-in-progress. The WSDL parser is the current step of development.
+
+## Goals
+
+* No HTTP library. Sponge is not designed to actually make HTTP requests
+* Loosely based on the [LolSoap Ruby library](https://github.com/loco2/lolsoap)
+
+## License
+
+See LICENSE
