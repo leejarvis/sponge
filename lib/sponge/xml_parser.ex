@@ -4,10 +4,10 @@ defmodule Sponge.XMLParser do
   """
 
   require Record
-  Record.defrecord :xmlElement,   Record.extract(:xmlElement, from_lib: "xmerl/include/xmerl.hrl")
-  Record.defrecord :xmlAttribute, Record.extract(:xmlAttribute, from_lib: "xmerl/include/xmerl.hrl")
-  Record.defrecord :xmlText,      Record.extract(:xmlText, from_lib: "xmerl/include/xmerl.hrl")
-  Record.defrecord :xmlNamespace, Record.extract(:xmlText, from_lib: "xmerl/include/xmerl.hrl")
+  Record.defrecordp :xmlElement,   Record.extract(:xmlElement, from_lib: "xmerl/include/xmerl.hrl")
+  Record.defrecordp :xmlAttribute, Record.extract(:xmlAttribute, from_lib: "xmerl/include/xmerl.hrl")
+  Record.defrecordp :xmlText,      Record.extract(:xmlText, from_lib: "xmerl/include/xmerl.hrl")
+  Record.defrecordp :xmlNamespace, Record.extract(:xmlText, from_lib: "xmerl/include/xmerl.hrl")
 
   def xml_parse(xml, options \\ []) do
     {doc, _} =
@@ -73,4 +73,15 @@ defmodule Sponge.XMLParser do
       {to_string(key), to_string(value)}
     end
   end
+
+  @doc """
+      iex> import Sponge.XMLParser
+      iex>
+      iex> xml_parse("<author><uid>1234</uid></author>")
+      iex> |> xml_find("//author/uid")
+      iex> |> xml_name()
+      :uid
+  """
+  def xml_name(xmlElement(name: name)), do: name
+  def xml_name(_), do: nil
 end

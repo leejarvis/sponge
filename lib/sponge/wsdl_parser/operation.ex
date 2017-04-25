@@ -47,7 +47,7 @@ defmodule Sponge.WSDLParser.Operation do
 
   defp operation_io_message(wsdl, operation, direction, node) do
     message = case xml_attr(node, "message") do
-      nil -> port_type_operation(wsdl, xml_attr(operation, :name), xmlElement(direction, :name))
+      nil -> port_type_operation(wsdl, xml_attr(operation, :name), xml_name(direction))
       msg -> msg
     end
 
