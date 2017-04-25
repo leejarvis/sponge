@@ -52,22 +52,32 @@ defmodule Sponge.WSDLParser do
     put(wsdl, :messages, do_parse_messages(wsdl))
   end
   defp do_parse_messages(wsdl) do
-    for m <- search(wsdl, "/wsdl:definitions/wsdl:message"), into: %{} do
-      parts = for part <- search(wsdl, m, "wsdl:part"), into: %{} do
+    for message <- messages(wsdl), into: %{} do
+      parts = for part <- message_parts(wsdl, message), into: %{} do
         {xml_attr(part, :name), namespace_and_name(part, xml_attr(part, :element), nil)}
       end
-      {xml_attr(m, :name), parts}
+      {xml_attr(message, :name), parts}
     end
   end
+
+  defp messages(wsdl), do: search(wsdl, "/wsdl:definitions/wsdl:message")
+  defp message_parts(wsdl, message), do: search(wsdl, message, "wsdl:part")
 
   defp parse_port_type_operations(wsdl) do
     put(wsdl, :port_type_operations, do_parse_port_type_operations(wsdl))
   end
   defp do_parse_port_type_operations(wsdl) do
-    for op <- search(wsdl, "/wsdl:definitions/wsdl:portType/wsdl:operation"), into: %{} do
-      {xml_attr(op, :name), %{input: find(wsdl, op, "./input/@message"),
-        output: find(wsdl, op, "./output/@message")}}
+    for op <- port_type_operations(wsdl), into: %{} do
+      {
+        xml_attr(op, :name), %{
+          input:  find(wsdl, op, "./input/@message"),
+          output: find(wsdl, op, "./output/@message")
+        }
+      }
     end
+  end
+  defp port_type_operations(wsdl) do
+    search(wsdl, "/wsdl:definitions/wsdl:portType/wsdl:operation")
   end
 
   defp parse_operations(wsdl) do
@@ -77,16 +87,17 @@ defmodule Sponge.WSDLParser do
   end
 
   defp operations_for_binding(wsdl, binding) do
-    for op <- search(wsdl, "/wsdl:definitions/wsdl:binding[@name='#{binding}']/wsdl:operation"), into: %{} do
+    for op <- binding_operations(wsdl, binding), into: %{} do
       op = Operation.parse(wsdl, op)
       {op.name, op}
     end
   end
+  defp binding_operations(wsdl, binding) do
+    search(wsdl, "/wsdl:definitions/wsdl:binding[@name='#{binding}']/wsdl:operation")
+  end
 
   defp service_binding(wsdl) do
-    binding = find(wsdl, "/wsdl:definitions/wsdl:service/wsdl:port/soap:address/../@binding")
-
-    case binding do
+    case find(wsdl, "/wsdl:definitions/wsdl:service/wsdl:port/soap:address/../@binding") do
       nil   -> {:error, "invalid WSDL: could not find address binding"}
       value -> {:ok, String.split(value, ":", parts: 2) |> Enum.at(-1)}
     end
