@@ -2,13 +2,26 @@ defmodule Sponge.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :sponge,
-     version: "0.1.0",
-     elixir: "~> 1.4",
-     build_embedded: Mix.env == :prod,
-     start_permanent: Mix.env == :prod,
-     elixirc_paths: elixirc_paths(Mix.env),
-     deps: deps()]
+    [
+      app: :sponge,
+      version: "0.1.0",
+      elixir: "~> 1.4",
+      build_embedded: Mix.env == :prod,
+      start_permanent: Mix.env == :prod,
+      elixirc_paths: elixirc_paths(Mix.env),
+      deps: deps(),
+      package: package(),
+      name: "Sponge",
+      description: description(),
+      source_url: "https://github.com/leejarvis/sponge"
+    ]
+  end
+
+  defp description do
+    """
+    Sponge is a library for dealing with building SOAP requests and parsing
+    responses.
+    """
   end
 
   # Configuration for the OTP application
@@ -19,17 +32,20 @@ defmodule Sponge.Mixfile do
     [extra_applications: [:logger]]
   end
 
-  # Dependencies can be Hex packages:
-  #
-  #   {:my_dep, "~> 0.3.0"}
-  #
-  # Or git/path repositories:
-  #
-  #   {:my_dep, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
-  #
-  # Type "mix help deps" for more examples and options
   defp deps do
-    []
+    [
+      {:ex_doc, ">= 0.0.0", only: :dev}
+    ]
+  end
+
+  defp package do
+    [
+      name: :sponge,
+      maintainers: ["Lee Jarvis"],
+      files: ["lib", "README.md", "mix.exs", "LICENSE"],
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/leejarvis/sponge"}
+    ]
   end
 
   defp elixirc_paths(:test), do: ["lib", "web", "test/support"]

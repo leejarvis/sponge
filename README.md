@@ -9,6 +9,7 @@ This is a work-in-progress. The WSDL parser is the current step of development.
 
 * No HTTP library. Sponge is not designed to actually make HTTP requests
 * Loosely based on the [LolSoap Ruby library](https://github.com/loco2/lolsoap)
+* No production dependencies outside standard library
 
 ## License
 
