@@ -3,7 +3,7 @@ defmodule Sponge.WSDLParserTest do
   doctest Sponge.WSDLParser
 
   alias Sponge.WSDLParser
-  alias Sponge.WSDLParser.Type
+  alias Sponge.WSDLParser.{Type, Operation}
 
   @raw Fixtures.read!("stock_quote.wsdl")
 
@@ -61,8 +61,42 @@ defmodule Sponge.WSDLParserTest do
 
   test "port type operations", %{wsdl: wsdl} do
     assert wsdl.port_type_operations == %{
-      "GetHistoricalPrice" => ["tns:GetHistoricalPriceInput", "tns:GetHistoricalPriceOutput"],
-      "GetLastTradePrice"  => ["tns:GetLastTradePriceInput", "tns:GetLastTradePriceOutput"]
+      "GetHistoricalPrice" => %{input: "tns:GetHistoricalPriceInput", output: "tns:GetHistoricalPriceOutput"},
+      "GetLastTradePrice"  => %{input: "tns:GetLastTradePriceInput", output: "tns:GetLastTradePriceOutput"},
+    }
+  end
+
+  test "operations", %{wsdl: wsdl} do
+    ns1 = "http://example.com/stockquote.xsd"
+
+    assert wsdl.operations == %{
+      "GetLastTradePrice" => %Operation{
+        name:   "GetLastTradePrice",
+        action: "http://example.com/GetLastTradePrice",
+        input: %{
+          header: [
+            {ns1, "tradePriceRequestHeader"},
+            {ns1, "authentication"},
+          ],
+          body: [{ns1, "tradePriceRequest"}]
+        },
+        output: %{
+          header: [],
+          body:   [{ns1, "TradePrice"}],
+        },
+      },
+      "GetHistoricalPrice" => %Operation{
+        name:   "GetHistoricalPrice",
+        action: "http://example.com/GetHistoricalPrice",
+        input:  %{
+          header: [],
+          body:   [{ns1, "historicalPriceRequest"}]
+        },
+        output: %{
+          header: [],
+          body:   [{ns1, "HistoricalPrice"}]
+        }
+      }
     }
   end
 

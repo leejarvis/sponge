@@ -4,7 +4,7 @@ defmodule Sponge.WSDLParser do
   defmodule WSDL do
     defstruct [:doc, :target_namespace, :namespaces,
               :soap_version, :endpoint, :name, :messages,
-              :port_type_operations, :types]
+              :port_type_operations, :operations, :types]
   end
 
   defmodule Type do
@@ -16,6 +16,51 @@ defmodule Sponge.WSDLParser do
       target_ns = xml_attr(schema, :targetNamespace)
       {ns, name} = Sponge.WSDLParser.namespace_and_name(type, target_ns)
       {{ns, name}, %Type{namespace: ns, name: name}}
+    end
+  end
+
+  defmodule Operation do
+    defstruct [:name, :action, :input, :output]
+
+    import Sponge.XMLParser
+
+    def parse(wsdl, node) do
+      %Operation{
+        name:   xml_attr(node, :name),
+        action: Sponge.WSDLParser.find(wsdl, node, "./soap:operation/@soapAction"),
+        input:  operation_io(wsdl, node, :input),
+        output: operation_io(wsdl, node, :output),
+      }
+    end
+
+    defp operation_io(wsdl, operation, dir) do
+      node = Sponge.WSDLParser.find(wsdl, operation, "wsdl:#{dir}")
+      %{
+        header: operation_io_parts(wsdl, operation, node, :header),
+        body:   operation_io_parts(wsdl, operation, node, :body),
+      }
+    end
+
+    defp port_type_operation(%WSDL{port_type_operations: ops}, operation, direction) do
+      Map.get(ops, operation, %{})
+      |> Map.get(direction, nil)
+    end
+
+    defp operation_io_parts(wsdl, operation, node, name) do
+      for n <- Sponge.WSDLParser.search(wsdl, node, "soap:#{name}") do
+        message = case xml_attr(n, "message") do
+          nil  -> port_type_operation(wsdl, xml_attr(operation, :name), xmlElement(node, :name))
+          mesg -> mesg
+        end
+        message = String.split(message, ":", parts: 2) |> Enum.reverse |> hd
+        parts = Map.fetch!(wsdl.messages, message)
+        partname = xml_attr(n, "parts") || xml_attr(n, "part")
+        part = Map.get(parts, partname, nil)
+        case part do
+          nil -> if name == :body, do: Map.values(parts) |> Enum.at(0)
+          v -> v
+        end
+      end |> Enum.reject(&is_nil/1)
     end
   end
 
@@ -35,6 +80,7 @@ defmodule Sponge.WSDLParser do
     |> parse_name
     |> parse_messages
     |> parse_port_type_operations
+    |> parse_operations
     |> parse_types
   end
 
@@ -82,9 +128,28 @@ defmodule Sponge.WSDLParser do
   end
   defp do_parse_port_type_operations(wsdl) do
     for op <- search(wsdl, "/wsdl:definitions/wsdl:portType/wsdl:operation"), into: %{} do
-      {xml_attr(op, :name), [xml_find(op, "./input/@message"),
-                               xml_find(op, "./output/@message")]}
+      {xml_attr(op, :name), %{input: xml_find(op, "./input/@message"),
+        output: xml_find(op, "./output/@message")}}
     end
+  end
+
+  defp parse_operations(wsdl) do
+    %{wsdl | operations: operations_for_binding(wsdl, service_binding(wsdl))}
+  end
+
+  defp operations_for_binding(wsdl, binding) do
+    for op <- search(wsdl, "/wsdl:definitions/wsdl:binding[@name='#{binding}']/wsdl:operation"), into: %{} do
+      op = Operation.parse(wsdl, op)
+      {op.name, op}
+    end
+  end
+
+  defp service_binding(wsdl) do
+    wsdl
+    |> find("/wsdl:definitions/wsdl:service/wsdl:port/soap:address/../@binding")
+    |> String.split(":", parts: 2)
+    |> Enum.take(-1)
+    |> hd
   end
 
   defp parse_types(wsdl) do
@@ -104,14 +169,17 @@ defmodule Sponge.WSDLParser do
     search(wsdl, schema, "xsd:complexType[not(@abstract='true')]")
   end
 
-  defp find(%WSDL{} = wsdl, path) do
+  def find(%WSDL{} = wsdl, path) do
     xml_find(wsdl.doc, path, namespace: ns(wsdl))
   end
+  def find(%WSDL{} = wsdl, node, path) do
+    xml_find(node, path, namespace: ns(wsdl))
+  end
 
-  defp search(%WSDL{} = wsdl, path) do
+  def search(%WSDL{} = wsdl, path) do
     xml_search(wsdl.doc, path, namespace: ns(wsdl))
   end
-  defp search(%WSDL{} = wsdl, node, path) do
+  def search(%WSDL{} = wsdl, node, path) do
     xml_search(node, path, namespace: ns(wsdl))
   end
 
