@@ -25,7 +25,7 @@ defmodule Sponge.XMLParser do
       ["Lee", "Shirley"]
   """
   def xml_search(node, path, opts \\ []) do
-    for found <- xpath(node, path, opts), do: found
+    xpath(node, path, opts)
   end
 
   @doc """
