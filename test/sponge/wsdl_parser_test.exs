@@ -3,6 +3,7 @@ defmodule Sponge.WSDLParserTest do
   doctest Sponge.WSDLParser
 
   alias Sponge.WSDLParser
+  alias Sponge.WSDLParser.Type
 
   @raw Fixtures.read!("stock_quote.wsdl")
 
@@ -47,6 +48,30 @@ defmodule Sponge.WSDLParserTest do
     assert wsdl.port_type_operations == %{
       "GetHistoricalPrice" => ["tns:GetHistoricalPriceInput", "tns:GetHistoricalPriceOutput"],
       "GetLastTradePrice"  => ["tns:GetLastTradePriceInput", "tns:GetLastTradePriceOutput"]
+    }
+  end
+
+  test "types", %{wsdl: wsdl} do
+    ns1 = "http://example.com/stockquote.xsd"
+    ns2 = "http://example.com/stockquote2.xsd"
+
+    assert wsdl.types == %{
+      {ns1, "Price"} => %Type{
+        name:       "Price",
+        namespace:  ns1
+      },
+      {ns1, "TradePriceRequest"} => %Type{
+        name:       "TradePriceRequest",
+        namespace:  ns1,
+      },
+      {ns1, "HistoricalPriceRequest"} => %Type{
+        name:       "HistoricalPriceRequest",
+        namespace:  ns1,
+      },
+      {ns2, "TickerSymbol"} => %Type{
+        name:       "TickerSymbol",
+        namespace:  ns2,
+      },
     }
   end
 end

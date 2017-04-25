@@ -4,7 +4,31 @@ defmodule Sponge.WSDLParser do
   defmodule WSDL do
     defstruct [:doc, :target_namespace, :namespaces,
               :soap_version, :endpoint, :name, :messages,
-              :port_type_operations]
+              :port_type_operations, :types]
+  end
+
+  defmodule Type do
+    defstruct [:namespace, :name]
+
+    import Sponge.XMLParser
+
+    def parse(schema, type) do
+      target_ns = xml_attr(schema, :targetNamespace)
+      {ns, name} = namespace_and_name(type, target_ns)
+      {{ns, name}, %Type{namespace: ns, name: name}}
+    end
+
+    defp namespace_and_name(node, default_ns) do
+      name = xml_attr(node, :name)
+      cond do
+        String.contains?(name, ":") ->
+          [nskey, name] = String.split(name, ":", parts: 2)
+          namespace = Map.fetch!(xml_namespaces(node), nskey)
+          {namespace, name}
+        true ->
+          {default_ns, name}
+      end
+    end
   end
 
   import XMLParser
@@ -23,6 +47,7 @@ defmodule Sponge.WSDLParser do
     |> parse_name
     |> parse_messages
     |> parse_port_type_operations
+    |> parse_types
   end
 
   defp parse_xml(wsdl) do
@@ -71,12 +96,32 @@ defmodule Sponge.WSDLParser do
     end
   end
 
+  defp parse_types(wsdl) do
+    %{wsdl | types: do_parse_types(wsdl)}
+  end
+  defp do_parse_types(wsdl) do
+    for schema <- schemas(wsdl), type <- types(wsdl, schema), into: %{} do
+      Type.parse(schema, type)
+    end
+  end
+
+  defp schemas(wsdl) do
+    search(wsdl, "/wsdl:definitions/wsdl:types/xsd:schema")
+  end
+
+  defp types(wsdl, schema) do
+    search(wsdl, schema, "xsd:complexType[not(@abstract='true')]")
+  end
+
   defp find(%WSDL{} = wsdl, path) do
     xml_find(wsdl.doc, path, namespace: ns(wsdl))
   end
 
   defp search(%WSDL{} = wsdl, path) do
     xml_search(wsdl.doc, path, namespace: ns(wsdl))
+  end
+  defp search(%WSDL{} = wsdl, node, path) do
+    xml_search(node, path, namespace: ns(wsdl))
   end
 
   defp ns(%WSDL{soap_version: version}) do
