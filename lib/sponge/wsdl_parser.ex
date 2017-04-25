@@ -10,9 +10,10 @@ defmodule Sponge.WSDLParser do
   @soap_1_1 'http://schemas.xmlsoap.org/wsdl/soap/'
   @soap_1_2 'http://schemas.xmlsoap.org/wsdl/soap12/'
 
-  def parse(wsdl) do
-    with {:ok, wsdl} <- parse_xml(wsdl),
-         {:ok, wsdl} <- parse_namespaces(wsdl),
+  def parse(xml) do
+    wsdl = WSDL.init(xml)
+
+    with {:ok, wsdl} <- parse_namespaces(wsdl),
          {:ok, wsdl} <- parse_soap_version(wsdl),
          {:ok, wsdl} <- parse_endpoint(wsdl),
          {:ok, wsdl} <- parse_name(wsdl),
@@ -23,35 +24,32 @@ defmodule Sponge.WSDLParser do
          do: {:ok, wsdl}
   end
 
-  defp parse_xml(wsdl) do
-    {:ok, %WSDL{doc: xml_parse(wsdl, namespace_conformant: true)}}
-  end
-
   defp parse_namespaces(%WSDL{doc: doc} = wsdl) do
-    {:ok, %{wsdl | namespaces: xml_namespaces(doc),
-      target_namespace: xml_attr(doc, "targetNamespace")}}
+    wsdl
+    |> put(:namespaces, xml_namespaces(doc))
+    |> put(:target_namespace, xml_attr(doc, "targetNamespace"))
   end
 
   defp parse_soap_version(%WSDL{doc: doc} = wsdl) do
-    {:ok, case xml_find(doc, "//soap:*", namespace: [soap: @soap_1_2]) do
-      nil -> %{wsdl | soap_version: "1.1"}
-      _   -> %{wsdl | soap_version: "1.2"}
-    end}
+    case xml_find(doc, "//soap:*", namespace: [soap: @soap_1_2]) do
+      nil -> put(wsdl, :soap_version, "1.1")
+      _   -> put(wsdl, :soap_version, "1.2")
+    end
   end
 
   defp parse_endpoint(wsdl) do
-    {:ok, case find(wsdl, "/wsdl:definitions/wsdl:service/wsdl:port/soap:address/@location") do
-      nil   -> wsdl
-      value -> %{wsdl | endpoint: URI.decode(value)}
-    end}
+    case find(wsdl, "/wsdl:definitions/wsdl:service/wsdl:port/soap:address/@location") do
+      nil   -> {:ok, wsdl}
+      value -> put(wsdl, :endpoint, URI.decode(value))
+    end
   end
 
   defp parse_name(wsdl) do
-    {:ok, %{wsdl | name: xml_attr(wsdl.doc, "name")}}
+    put(wsdl, :name, xml_attr(wsdl.doc, "name"))
   end
 
   defp parse_messages(wsdl) do
-    {:ok, %{wsdl | messages: do_parse_messages(wsdl)}}
+    put(wsdl, :messages, do_parse_messages(wsdl))
   end
   defp do_parse_messages(wsdl) do
     for m <- search(wsdl, "/wsdl:definitions/wsdl:message"), into: %{} do
@@ -63,21 +61,18 @@ defmodule Sponge.WSDLParser do
   end
 
   defp parse_port_type_operations(wsdl) do
-    {:ok, %{wsdl | port_type_operations: do_parse_port_type_operations(wsdl)}}
+    put(wsdl, :port_type_operations, do_parse_port_type_operations(wsdl))
   end
   defp do_parse_port_type_operations(wsdl) do
     for op <- search(wsdl, "/wsdl:definitions/wsdl:portType/wsdl:operation"), into: %{} do
-      {xml_attr(op, :name), %{input: xml_find(op, "./input/@message"),
-        output: xml_find(op, "./output/@message")}}
+      {xml_attr(op, :name), %{input: find(wsdl, op, "./input/@message"),
+        output: find(wsdl, op, "./output/@message")}}
     end
   end
 
   defp parse_operations(wsdl) do
-    case service_binding(wsdl) do
-      {:ok, binding} ->
-        {:ok, %{wsdl | operations: operations_for_binding(wsdl, binding)}}
-      value ->
-        value
+    with {:ok, binding} <- service_binding(wsdl) do
+      put(wsdl, :operations, operations_for_binding(wsdl, binding))
     end
   end
 
@@ -98,7 +93,7 @@ defmodule Sponge.WSDLParser do
   end
 
   defp parse_types(wsdl) do
-    {:ok, %{wsdl | types: do_parse_types(wsdl)}}
+    put(wsdl, :types, do_parse_types(wsdl))
   end
   defp do_parse_types(wsdl) do
     for schema <- schemas(wsdl), type <- types(wsdl, schema), into: %{} do
@@ -114,6 +109,33 @@ defmodule Sponge.WSDLParser do
   defp types(wsdl, schema) do
     search(wsdl, schema, "xsd:complexType[not(@abstract='true')]")
   end
+
+  def namespace_and_name(node, default_ns) do
+    namespace_and_name(node, xml_attr(node, :name), default_ns)
+  end
+
+  def namespace_and_name(node, name, default_ns) do
+    cond do
+      String.contains?(name, ":") ->
+        [nskey, name] = String.split(name, ":", parts: 2)
+        namespace = Map.fetch!(xml_namespaces(node), nskey)
+        {namespace, name}
+      true ->
+        {default_ns, name}
+    end
+  end
+
+  defp put(%WSDL{} = wsdl, key, value) do
+    {:ok, Map.put(wsdl, key, value)}
+  end
+  defp put({:ok, wsdl}, key, value) do
+    put(wsdl, key, value)
+  end
+
+  # TODO: The following functions bridge the gap between the XML
+  # parser and dealing with a WSDL (e.g. it provides namespaces
+  # when searching). They should probably be extracted into a
+  # separate module.
 
   def find(%WSDL{} = wsdl, path) do
     xml_find(wsdl.doc, path, namespace: ns(wsdl))
@@ -135,21 +157,6 @@ defmodule Sponge.WSDLParser do
       xsd:  @xsd,
       soap: soap_namespace(version)
     ]
-  end
-
-  def namespace_and_name(node, default_ns) do
-    namespace_and_name(node, xml_attr(node, :name), default_ns)
-  end
-
-  def namespace_and_name(node, name, default_ns) do
-    cond do
-      String.contains?(name, ":") ->
-        [nskey, name] = String.split(name, ":", parts: 2)
-        namespace = Map.fetch!(xml_namespaces(node), nskey)
-        {namespace, name}
-      true ->
-        {default_ns, name}
-    end
   end
 
   defp soap_namespace("1.1"), do: @soap_1_1
