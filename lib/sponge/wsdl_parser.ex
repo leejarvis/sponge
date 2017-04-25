@@ -14,20 +14,8 @@ defmodule Sponge.WSDLParser do
 
     def parse(schema, type) do
       target_ns = xml_attr(schema, :targetNamespace)
-      {ns, name} = namespace_and_name(type, target_ns)
+      {ns, name} = Sponge.WSDLParser.namespace_and_name(type, target_ns)
       {{ns, name}, %Type{namespace: ns, name: name}}
-    end
-
-    defp namespace_and_name(node, default_ns) do
-      name = xml_attr(node, :name)
-      cond do
-        String.contains?(name, ":") ->
-          [nskey, name] = String.split(name, ":", parts: 2)
-          namespace = Map.fetch!(xml_namespaces(node), nskey)
-          {namespace, name}
-        true ->
-          {default_ns, name}
-      end
     end
   end
 
@@ -82,7 +70,10 @@ defmodule Sponge.WSDLParser do
   end
   defp do_parse_messages(wsdl) do
     for m <- search(wsdl, "/wsdl:definitions/wsdl:message"), into: %{} do
-      {xml_attr(m, :name), m}
+      parts = for part <- search(wsdl, m, "wsdl:part"), into: %{} do
+        {xml_attr(part, :name), namespace_and_name(part, xml_attr(part, :element), nil)}
+      end
+      {xml_attr(m, :name), parts}
     end
   end
 
@@ -130,6 +121,22 @@ defmodule Sponge.WSDLParser do
       xsd:  @xsd,
       soap: soap_namespace(version)
     ]
+  end
+
+  def namespace_and_name(node, default_ns) do
+    namespace_and_name(node, xml_attr(node, :name), default_ns)
+  end
+
+  def namespace_and_name(node, name, default_ns) do
+    cond do
+      String.contains?(name, ":") ->
+        [nskey, name] = String.split(name, ":", parts: 2)
+        namespace = Map.fetch!(xml_namespaces(node), nskey)
+        {namespace, name}
+      true ->
+        {default_ns, name}
+    end
+
   end
 
   defp soap_namespace("1.1"), do: @soap_1_1

@@ -35,13 +35,28 @@ defmodule Sponge.WSDLParserTest do
   end
 
   test "messages", %{wsdl: wsdl} do
-    assert Map.keys(wsdl.messages) == [
-      "GetHistoricalPriceInput",
-      "GetHistoricalPriceOutput",
-      "GetLastTradePriceInput",
-      "GetLastTradePriceInputHeader",
-      "GetLastTradePriceOutput"
-    ]
+    ns1 = "http://example.com/stockquote.xsd"
+    xsd = "http://www.w3.org/2001/XMLSchema"
+
+    assert wsdl.messages == %{
+      "GetLastTradePriceInputHeader" => %{
+        "header"  => {ns1, "tradePriceRequestHeader"},
+        "header2" => {ns1, "authentication"},
+      },
+      "GetLastTradePriceInput" => %{
+        "foo"  => {xsd, "string"},
+        "body" => {ns1, "tradePriceRequest"},
+      },
+      "GetLastTradePriceOutput" => %{
+        "body" => {ns1, "TradePrice"}
+      },
+      "GetHistoricalPriceInput" => %{
+        "body" => {ns1, "historicalPriceRequest"}
+      },
+      "GetHistoricalPriceOutput" => %{
+        "body" => {ns1, "HistoricalPrice"}
+      }
+    }
   end
 
   test "port type operations", %{wsdl: wsdl} do
