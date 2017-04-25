@@ -8,7 +8,8 @@ defmodule Sponge.WSDLParserTest do
   @raw Fixtures.read!("stock_quote.wsdl")
 
   setup do
-    {:ok, wsdl: WSDLParser.parse(@raw)}
+    {:ok, wsdl} = WSDLParser.parse(@raw)
+    {:ok, wsdl: wsdl}
   end
 
   test "soap version", %{wsdl: wsdl} do
@@ -122,5 +123,14 @@ defmodule Sponge.WSDLParserTest do
         namespace:  ns2,
       },
     }
+  end
+
+  test "errors" do
+    assert_error "invalid WSDL: could not find address binding",
+      "<foo><bar></bar></foo>"
+  end
+
+  defp assert_error(message, xml) do
+    assert {:error, message} == WSDLParser.parse(xml)
   end
 end

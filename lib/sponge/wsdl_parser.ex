@@ -72,47 +72,47 @@ defmodule Sponge.WSDLParser do
   @soap_1_2 'http://schemas.xmlsoap.org/wsdl/soap12/'
 
   def parse(wsdl) do
-    wsdl
-    |> parse_xml
-    |> parse_namespaces
-    |> parse_soap_version
-    |> parse_endpoint
-    |> parse_name
-    |> parse_messages
-    |> parse_port_type_operations
-    |> parse_operations
-    |> parse_types
+    with {:ok, wsdl} <- parse_xml(wsdl),
+         {:ok, wsdl} <- parse_namespaces(wsdl),
+         {:ok, wsdl} <- parse_soap_version(wsdl),
+         {:ok, wsdl} <- parse_endpoint(wsdl),
+         {:ok, wsdl} <- parse_name(wsdl),
+         {:ok, wsdl} <- parse_messages(wsdl),
+         {:ok, wsdl} <- parse_port_type_operations(wsdl),
+         {:ok, wsdl} <- parse_operations(wsdl),
+         {:ok, wsdl} <- parse_types(wsdl),
+         do: {:ok, wsdl}
   end
 
   defp parse_xml(wsdl) do
-    %WSDL{doc: xml_parse(wsdl, namespace_conformant: true)}
+    {:ok, %WSDL{doc: xml_parse(wsdl, namespace_conformant: true)}}
   end
 
   defp parse_namespaces(%WSDL{doc: doc} = wsdl) do
-    %{wsdl | namespaces: xml_namespaces(doc),
-      target_namespace: xml_attr(doc, "targetNamespace")}
+    {:ok, %{wsdl | namespaces: xml_namespaces(doc),
+      target_namespace: xml_attr(doc, "targetNamespace")}}
   end
 
   defp parse_soap_version(%WSDL{doc: doc} = wsdl) do
-    case xml_find(doc, "//soap:*", namespace: [soap: @soap_1_2]) do
+    {:ok, case xml_find(doc, "//soap:*", namespace: [soap: @soap_1_2]) do
       nil -> %{wsdl | soap_version: "1.1"}
       _   -> %{wsdl | soap_version: "1.2"}
-    end
+    end}
   end
 
   defp parse_endpoint(wsdl) do
-    case find(wsdl, "/wsdl:definitions/wsdl:service/wsdl:port/soap:address/@location") do
+    {:ok, case find(wsdl, "/wsdl:definitions/wsdl:service/wsdl:port/soap:address/@location") do
       nil   -> wsdl
       value -> %{wsdl | endpoint: URI.decode(value)}
-    end
+    end}
   end
 
   defp parse_name(wsdl) do
-    %{wsdl | name: xml_attr(wsdl.doc, "name")}
+    {:ok, %{wsdl | name: xml_attr(wsdl.doc, "name")}}
   end
 
   defp parse_messages(wsdl) do
-    %{wsdl | messages: do_parse_messages(wsdl)}
+    {:ok, %{wsdl | messages: do_parse_messages(wsdl)}}
   end
   defp do_parse_messages(wsdl) do
     for m <- search(wsdl, "/wsdl:definitions/wsdl:message"), into: %{} do
@@ -124,7 +124,7 @@ defmodule Sponge.WSDLParser do
   end
 
   defp parse_port_type_operations(wsdl) do
-    %{wsdl | port_type_operations: do_parse_port_type_operations(wsdl)}
+    {:ok, %{wsdl | port_type_operations: do_parse_port_type_operations(wsdl)}}
   end
   defp do_parse_port_type_operations(wsdl) do
     for op <- search(wsdl, "/wsdl:definitions/wsdl:portType/wsdl:operation"), into: %{} do
@@ -134,7 +134,12 @@ defmodule Sponge.WSDLParser do
   end
 
   defp parse_operations(wsdl) do
-    %{wsdl | operations: operations_for_binding(wsdl, service_binding(wsdl))}
+    case service_binding(wsdl) do
+      {:ok, binding} ->
+        {:ok, %{wsdl | operations: operations_for_binding(wsdl, binding)}}
+      value ->
+        value
+    end
   end
 
   defp operations_for_binding(wsdl, binding) do
@@ -145,15 +150,16 @@ defmodule Sponge.WSDLParser do
   end
 
   defp service_binding(wsdl) do
-    wsdl
-    |> find("/wsdl:definitions/wsdl:service/wsdl:port/soap:address/../@binding")
-    |> String.split(":", parts: 2)
-    |> Enum.take(-1)
-    |> hd
+    binding = find(wsdl, "/wsdl:definitions/wsdl:service/wsdl:port/soap:address/../@binding")
+
+    case binding do
+      nil   -> {:error, "invalid WSDL: could not find address binding"}
+      value -> {:ok, String.split(value, ":", parts: 2) |> Enum.at(-1)}
+    end
   end
 
   defp parse_types(wsdl) do
-    %{wsdl | types: do_parse_types(wsdl)}
+    {:ok, %{wsdl | types: do_parse_types(wsdl)}}
   end
   defp do_parse_types(wsdl) do
     for schema <- schemas(wsdl), type <- types(wsdl, schema), into: %{} do
