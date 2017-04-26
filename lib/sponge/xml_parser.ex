@@ -10,7 +10,9 @@ defmodule Sponge.XMLParser do
   Record.defrecordp :xmlNamespace, Record.extract(:xmlText, from_lib: "xmerl/include/xmerl.hrl")
 
   @doc """
-  Parse an XML document.
+  Parse an XML document using xmerl.
+
+  Returns an xmerl `xmlElement` record.
   """
   def xml_parse(xml, options \\ []) do
     {doc, _} =
@@ -39,6 +41,9 @@ defmodule Sponge.XMLParser do
   @doc """
   Find a single XML element.
 
+  If the xpath includes a text or attribute selector, e.g. `//name/text()`
+  or `//name/@id` then the string value of the result will be returned.
+
   ## Examples
 
       iex> import Sponge.XMLParser
@@ -50,36 +55,50 @@ defmodule Sponge.XMLParser do
 
   """
   def xml_find(node, xpath, opts \\ []) do
-    node
-    |> xml_search(xpath, opts)
-    |> take
+    xml_search(node, xpath, opts)
+    |> Enum.at(0)
     |> parsed
   end
 
-  defp take([head | _]), do: head
-  defp take(_), do: nil
-
   defp parsed(xmlAttribute(value: value)), do: to_string(value)
+  defp parsed(xmlText(value: value)), do: to_string(value)
   defp parsed(value), do: value
 
-  def xml_text(xmlText(value: value)), do: to_string(value)
 
+  @doc """
+  Extract text from an XML element.
+
+  ## Examples
+
+      iex> import Sponge.XMLParser
+      iex>
+      iex> xml_parse("<root><name>Lee</name></root>")
+      iex> |> xml_find("//name")
+      iex> |> xml_text()
+      "Lee"
+
+  """
   def xml_text(node) do
-    node |> xml_search('./text()') |> extract_text
+    xml_find(node, "./text()")
   end
 
-  defp extract_text([xmlText(value: value)]), do: to_string(value)
-  defp extract_text(_), do: nil
 
-  def xml_attr(xmlAttribute(value: value)), do: to_string(value)
+  @doc """
+  Get an XML attribute value.
+
+  ## Examples
+
+      iex> import Sponge.XMLParser
+      iex>
+      iex> xml_parse("<root><name id='123'>Lee</name></root>")
+      iex> |> xml_find("//name")
+      iex> |> xml_attr("id")
+      "123"
+
+  """
   def xml_attr(node, name) do
-    node |> xml_search('./@#{name}') |> extract_attr
+    xml_find(node, "./@#{name}")
   end
-
-  defp extract_attr([xmlAttribute(value: value)]) do
-    to_string(value)
-  end
-  defp extract_attr(_), do: nil
 
   @doc """
   Get the list of namespaces for an XML element.

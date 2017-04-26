@@ -59,6 +59,6 @@ defmodule Sponge.XMLParserTest do
     assert xml_text(name) == "My book"
 
     name = xml_find(doc, "//book/name/text()")
-    assert xml_text(name) == "My book"
+    assert name == "My book"
   end
 end
