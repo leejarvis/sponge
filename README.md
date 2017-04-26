@@ -1,4 +1,6 @@
-# Sponge
+Sponge
+======
+[![Build Status](https://travis-ci.org/leejarvis/sponge.svg?branch=master)](https://travis-ci.org/leejarvis/sponge)
 
 Sponge is a library for dealing with building SOAP requests and parsing
 responses.
