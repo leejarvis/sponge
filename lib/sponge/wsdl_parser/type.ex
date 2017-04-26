@@ -1,4 +1,6 @@
 defmodule Sponge.WSDLParser.Type do
+  @moduledoc false
+
   defstruct [:namespace, :name]
 
   alias __MODULE__

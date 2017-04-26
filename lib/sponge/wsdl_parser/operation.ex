@@ -1,4 +1,6 @@
 defmodule Sponge.WSDLParser.Operation do
+  @moduledoc false
+
   defstruct [:name, :action, :input, :output]
 
   alias __MODULE__
@@ -24,7 +26,8 @@ defmodule Sponge.WSDLParser.Operation do
   end
 
   defp port_type_operation(%WSDL{port_type_operations: ops}, operation, direction) do
-    Map.get(ops, operation, %{})
+    ops
+    |> Map.get(operation, %{})
     |> Map.get(direction, nil)
   end
 
@@ -40,7 +43,7 @@ defmodule Sponge.WSDLParser.Operation do
     partname  = xml_attr(node, "parts") || xml_attr(node, "part")
 
     case Map.get(parts, partname, nil) do
-      nil -> if name == :body, do: Map.values(parts) |> Enum.at(0)
+      nil -> if name == :body, do: parts |> Map.values |> Enum.at(0)
       part -> part
     end
   end
@@ -51,6 +54,8 @@ defmodule Sponge.WSDLParser.Operation do
       msg -> msg
     end
 
-    String.split(message, ":", parts: 2) |> Enum.at(-1)
+    message
+    |> String.split(":", parts: 2)
+    |> Enum.at(-1)
   end
 end

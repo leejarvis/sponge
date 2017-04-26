@@ -1,4 +1,6 @@
 defmodule Sponge.WSDL do
+  @moduledoc false
+
   defstruct [:doc, :target_namespace, :namespaces,
             :soap_version, :endpoint, :name, :messages,
             :port_type_operations, :operations, :types]

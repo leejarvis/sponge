@@ -16,7 +16,8 @@ defmodule Sponge.XMLParser do
   """
   def xml_parse(xml, options \\ []) do
     {doc, _} =
-      to_char_list(xml)
+      xml
+      |> to_char_list
       |> :xmerl_scan.string(options)
     doc
   end
@@ -55,7 +56,8 @@ defmodule Sponge.XMLParser do
 
   """
   def xml_find(node, xpath, opts \\ []) do
-    xml_search(node, xpath, opts)
+    node
+    |> xml_search(xpath, opts)
     |> Enum.at(0)
     |> parsed
   end

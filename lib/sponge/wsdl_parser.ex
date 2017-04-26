@@ -1,7 +1,13 @@
 defmodule Sponge.WSDLParser do
+  @moduledoc """
+  This module contains functions for parsing a WSDL.
+  """
+
   alias Sponge.XMLParser
+
   alias Sponge.WSDL
-  alias Sponge.WSDLParser.{Type, Operation}
+  alias Sponge.WSDLParser.Type
+  alias Sponge.WSDLParser.Operation
 
   import XMLParser
 
@@ -99,7 +105,7 @@ defmodule Sponge.WSDLParser do
   defp service_binding(wsdl) do
     case find(wsdl, "/wsdl:definitions/wsdl:service/wsdl:port/soap:address/../@binding") do
       nil   -> {:error, "invalid WSDL: could not find address binding"}
-      value -> {:ok, String.split(value, ":", parts: 2) |> Enum.at(-1)}
+      value -> {:ok, value |> String.split(":", parts: 2) |> Enum.at(-1)}
     end
   end
 
@@ -126,13 +132,12 @@ defmodule Sponge.WSDLParser do
   end
 
   def namespace_and_name(node, name, default_ns) do
-    cond do
-      String.contains?(name, ":") ->
-        [nskey, name] = String.split(name, ":", parts: 2)
-        namespace = Map.fetch!(xml_namespaces(node), nskey)
-        {namespace, name}
-      true ->
-        {default_ns, name}
+    if String.contains?(name, ":") do
+      [nskey, name] = String.split(name, ":", parts: 2)
+      namespace = Map.fetch!(xml_namespaces(node), nskey)
+      {namespace, name}
+    else
+      {default_ns, name}
     end
   end
 
